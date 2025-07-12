@@ -50,7 +50,6 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 @EnableWebSecurity
 public class SecurityConfig {
     @Autowired
-
     private PasswordEncoder passwordEncoder;
 
     @Bean
@@ -89,36 +88,18 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /*
-     * @Bean()
-     * UserDetailsService userDetailsService() {
-     * UserDetails userDetails = User.builder()
-     * .username("felipe")
-     * .password("{noop}123456")
-     * .roles("USER")
-     * .build();
-     * UserDetails admin = User.builder()
-     * .username("admin")
-     * .password("{noop}123456")
-     * .roles("USER", "ADMIN")
-     * .build();
-     * 
-     * return new InMemoryUserDetailsManager(userDetails, admin);
-     * }
-     */
-
     @Bean()
     RegisteredClientRepository registeredClientRepository() {
         RegisteredClient oidcClient = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId("gateway-app")
-                // .clientSecret("{noop}123456")
                 .clientSecret(passwordEncoder.encode("123456"))
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                .redirectUri("http://127.0.0.1:8090/login/oauth2/code/client-app")
+                .redirectUri("http://localhost:8090/login/oauth2/code/client-app")
+                .redirectUri("http://localhost:8090/authorized")
                 .redirectUri("http://127.0.0.1:8090/authorized")
-                .postLogoutRedirectUri("http://127.0.0.1:8090/logout")
+                .postLogoutRedirectUri("http://localhost:8090/logout")
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
                 .clientSettings(ClientSettings.builder().requireAuthorizationConsent(false).build())

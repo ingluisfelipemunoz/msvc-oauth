@@ -30,24 +30,49 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        log.info("Attempting to load user by username: {}", username);
+
         Map<String, String> params = new HashMap<>();
         params.put("username", username);
+
         try {
+            log.info("Calling users service to get user: {}", username);
+
             User user = webClient.build().get().uri("/username/{username}", params)
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
                     .bodyToMono(User.class)
                     .block();
+
+            if (user == null) {
+                log.error("User not found: {}", username);
+                throw new UsernameNotFoundException("User not found: " + username);
+            }
+
             List<GrantedAuthority> authorities = user.getRoles().stream()
                     .map(role -> new SimpleGrantedAuthority(role.getName()))
                     .collect(Collectors.toList());
-            log.info("User: " + user.toString());
-            log.info("Authorities: " + authorities);
-            return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(),
-                    user.isEnabled(), true, true, true,
+
+            log.info("User loaded successfully: {}", user.getUsername());
+            log.info("User authorities: {}", authorities);
+
+            return new org.springframework.security.core.userdetails.User(
+                    user.getUsername(),
+                    user.getPassword(),
+                    user.isEnabled(),
+                    true,
+                    true,
+                    true,
                     authorities);
+
         } catch (WebClientResponseException e) {
-            throw new UsernameNotFoundException("Error al obtener el usuario: " + username);
+            log.error("Error calling users service for username {}: {}", username, e.getMessage());
+            log.error("Response status: {}", e.getStatusCode());
+            log.error("Response body: {}", e.getResponseBodyAsString());
+            throw new UsernameNotFoundException("Error al obtener el usuario: " + username + " - " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error loading user {}: {}", username, e.getMessage(), e);
+            throw new UsernameNotFoundException("Error inesperado al obtener el usuario: " + username);
         }
     }
 }
